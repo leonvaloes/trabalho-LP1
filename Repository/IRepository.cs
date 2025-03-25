@@ -4,8 +4,6 @@
     {
         bool Adicionar(T entity);
         bool Atualizar(T entity);
-        bool Excluir(int id);
-        T ObterPorId(int id);
         IEnumerable<T> ObterTodos();
 
     }

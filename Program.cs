@@ -1,7 +1,9 @@
 #region Serilog
 
 using System.Reflection;
+using IntroAPI.Controllers;
 using IntroAPI.Repository;
+using IntroAPI.Services;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using Serilog.Formatting.Compact;
@@ -66,7 +68,10 @@ try
 
     builder.Services.AddControllers();
 
-    builder.Services.AddScoped<TransacaoRepository>();  // Registrando o repositório como dependência
+    builder.Services.AddScoped<CartaoService>();
+    builder.Services.AddScoped<CartaoRepository>();
+    builder.Services.AddScoped<CartaoController>();
+    
 
     var app = builder.Build();
 

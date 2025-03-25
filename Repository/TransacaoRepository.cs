@@ -12,6 +12,7 @@ namespace IntroAPI.Repository
         {
             _stringConexao = configuration.GetConnectionString("DefaultConnection");
         }
+
         public bool Adicionar(Transacao entity)
         {
             bool sucesso = false;
