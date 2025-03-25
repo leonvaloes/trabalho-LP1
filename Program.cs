@@ -4,16 +4,16 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Configuração do Serilog
 Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(builder.Configuration) // Lê do appsettings.json
-    .WriteTo.Console()
-    .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day) // Salva logs em arquivos
+    .ReadFrom.Configuration(builder.Configuration) // Lê as configurações do appsettings.json
+    .WriteTo.Console() // Exibe logs no console
+    .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day, retainedFileCountLimit: 1) // Retém logs por 1 dia
     .CreateLogger();
 
-builder.Host.UseSerilog(); // Define o Serilog como logger da aplicação
+builder.Host.UseSerilog(); // Define Serilog como o logger da aplicação
 
 // Adicionando serviços ao container
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(); // Adiciona o Swagger
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
@@ -36,18 +36,26 @@ var summaries = new[]
 
 app.MapGet("/weatherforecast", () =>
 {
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
+    try
+    {
+        var forecast = Enumerable.Range(1, 5).Select(index =>
+            new WeatherForecast
+            (
+                DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
+                Random.Shared.Next(-20, 55),
+                summaries[Random.Shared.Next(summaries.Length)]
+            ))
+            .ToArray();
 
-    Log.Information("Endpoint /weatherforecast chamado com sucesso."); // Exemplo de log manual
+        Log.Information("Endpoint /weatherforecast chamado com sucesso."); // Log de sucesso
 
-    return forecast;
+        return Results.Ok(forecast);
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "Erro ao processar a requisição no endpoint /weatherforecast"); // Log de erro
+        return Results.Problem("Ocorreu um erro interno.");
+    }
 })
 .WithName("GetWeatherForecast")
 .WithOpenApi(); // Habilita a documentação Swagger para esse endpoint
