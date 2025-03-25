@@ -1,68 +1,92 @@
+#region Serilog
+
+using System.Reflection;
+using IntroAPI.Repository;
+using Microsoft.OpenApi.Models;
 using Serilog;
+using Serilog.Formatting.Compact;
 
-var builder = WebApplication.CreateBuilder(args);
 
-// Configuração do Serilog
+var logFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
+Directory.CreateDirectory(logFolder);
+
 Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(builder.Configuration) // Lê as configurações do appsettings.json
-    .WriteTo.Console() // Exibe logs no console
-    .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day, retainedFileCountLimit: 1) // Retém logs por 1 dia
+    .MinimumLevel.Error()
+
+    .WriteTo.File(new CompactJsonFormatter(),
+           Path.Combine(logFolder, ".json"),
+            retainedFileCountLimit: 7,
+            rollingInterval: RollingInterval.Day)
+
+    .WriteTo.File(Path.Combine(logFolder, ".log"),
+            retainedFileCountLimit: 7,
+            rollingInterval: RollingInterval.Day)
     .CreateLogger();
 
-builder.Host.UseSerilog(); // Define Serilog como o logger da aplicação
+#endregion
 
-// Adicionando serviços ao container
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-var app = builder.Build();
-
-// Middleware de logging do Serilog (deve vir antes das rotas)
-app.UseSerilogRequestLogging();
-
-// Configuração do pipeline de requisições
-if (app.Environment.IsDevelopment())
+try
 {
+
+    var builder = WebApplication.CreateBuilder(args);
+
+
+    //***Adicionar o Middleware do Swagger
+    builder.Services.AddSwaggerGen(c =>
+    {
+        c.SwaggerDoc("v1", new OpenApiInfo
+        {
+            Title = "Gerenciamento da API...",
+            Version = "v1",
+            Description = $@"<h3>Título <b>da API</b></h3>
+                            <p>
+                                Alguma descrição....
+                            </p>",
+            Contact = new OpenApiContact
+            {
+                Name = "Suporte Unoeste",
+                Email = string.Empty,
+                Url = new Uri("https://www.unoeste.br"),
+            },
+        });
+
+        // Set the comments path for the Swagger JSON and UI.
+        var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+        c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
+
+
+    }); ;
+
+        //Habilitar o uso do serilog.
+    builder.Host.UseSerilog();
+
+    builder.Services.AddHttpContextAccessor();
+
+    // Add services to the container.
+
+    builder.Services.AddControllers();
+
+    builder.Services.AddScoped<TransacaoRepository>();  // Registrando o repositório como dependência
+
+    var app = builder.Build();
+
+    // *** Usa o Middleware do Swagger
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
+        c.RoutePrefix = ""; //habilitar a página inicial da API ser a doc.
+        c.DocumentTitle = "Gerenciamento de Produtos - API V1";
+    });
+
+
+    app.MapControllers();
+
+    //int.Parse("fatallll");
+    app.Run();
+
 }
-
-app.UseHttpsRedirection();
-
-var summaries = new[]
+catch (Exception ex)
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    try
-    {
-        var forecast = Enumerable.Range(1, 5).Select(index =>
-            new WeatherForecast
-            (
-                DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                Random.Shared.Next(-20, 55),
-                summaries[Random.Shared.Next(summaries.Length)]
-            ))
-            .ToArray();
-
-        Log.Information("Endpoint /weatherforecast chamado com sucesso."); // Log de sucesso
-
-        return Results.Ok(forecast);
-    }
-    catch (Exception ex)
-    {
-        Log.Error(ex, "Erro ao processar a requisição no endpoint /weatherforecast"); // Log de erro
-        return Results.Problem("Ocorreu um erro interno.");
-    }
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi(); // Habilita a documentação Swagger para esse endpoint
-
-app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+    Log.Logger.Fatal(ex, "Erro fatal na aplicação");
 }

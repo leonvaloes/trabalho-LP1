@@ -44,11 +44,15 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "dependencies": {
-            "Microsoft.AspNetCore.OpenApi": {
+            "Microsoft.AspNetCore.Authentication.JwtBearer": {
               "target": "Package",
               "version": "[9.0.2, )"
             },
-            "Microsoft.Extensions.Configuration.Json": {
+            "MySql.Data": {
+              "target": "Package",
+              "version": "[9.2.0, )"
+            },
+            "Npgsql": {
               "target": "Package",
               "version": "[9.0.3, )"
             },
@@ -56,21 +60,17 @@
               "target": "Package",
               "version": "[9.0.0, )"
             },
-            "Serilog.Settings.Configuration": {
+            "Serilog.Sinks.MongoDB": {
               "target": "Package",
-              "version": "[9.0.0, )"
+              "version": "[7.0.0, )"
             },
-            "Serilog.Sinks.Console": {
+            "Serilog.Sinks.MySQL": {
               "target": "Package",
-              "version": "[6.0.0, )"
-            },
-            "Serilog.Sinks.File": {
-              "target": "Package",
-              "version": "[6.0.0, )"
+              "version": "[5.0.0, )"
             },
             "Swashbuckle.AspNetCore": {
               "target": "Package",
-              "version": "[8.0.0, )"
+              "version": "[7.2.0, )"
             }
           },
           "imports": [
